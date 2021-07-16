@@ -25,5 +25,5 @@ jobs:
             cd ~/code/discordBot/discord-gameBot/src
             git checkout .
             git pull
-            pm2 restart index.js
+            
             
