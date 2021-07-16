@@ -1,1 +1,1 @@
-pm2 restart index.js
+pm2 restart src/index.js
