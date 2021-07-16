@@ -1,5 +1,6 @@
 const BaseCommand = require('../../utils/structures/BaseCommand');
 const { MessageButton } = require('discord-buttons');
+const { quickgameData } = require('./quickgameVar.js');
 
 module.exports = class QuickgameCommand extends BaseCommand {
   constructor() {
@@ -8,6 +9,7 @@ module.exports = class QuickgameCommand extends BaseCommand {
 
   async run(client, message, args) {
     // variables
+    const data = quickgameData.get(message.guild.id);
     const sleep = require('util').promisify(setTimeout)
     let msgButton = new MessageButton()
       .setStyle("blurple")

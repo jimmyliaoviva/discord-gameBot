@@ -21,12 +21,19 @@ module.exports = class PlayCommand extends BaseCommand {
         "I need the permissions to join and speak in your voice channel!"
       );
     }
+    if (!args[0]) return message.channel.send('You need to specified the youtube url after the command. \`#play <youtube url>\`');
+    var songInfo;
+    try {
+      songInfo = await ytdl.getInfo(args[0]);
 
-    const songInfo = await ytdl.getInfo(args[0]);
+    } catch (err) {
+      return message.channel.send(`${err}`);
+    }
     const song = {
       title: songInfo.videoDetails.title,
       url: songInfo.videoDetails.video_url,
     };
+
 
     if (!serverQueue) {
       const queueContruct = {
@@ -78,6 +85,6 @@ function play(guild, song) {
     })
     .on("error", error => console.error(error));
   dispatcher.setVolumeLogarithmic(1);
-  dispatcher.setVolume(serverQueue.volume/100);
+  dispatcher.setVolume(serverQueue.volume / 100);
   serverQueue.textChannel.send(`Start playing: **${song.title}**`);
 }
