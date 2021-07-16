@@ -29,8 +29,8 @@ module.exports = class SpygameCommand extends BaseCommand {
     if (isNaN(spyNum) || !Number.isInteger(spyNum)) return message.channel.send('You enter the wrong format. number of spy must be an integer\`#spygame <[option] number of spys > <[option] enable whiteboard, 0 for disable 1 for enable.>\`');
     if (isNaN(whiteboardNum)) return message.channel.send('You enter the wrong format. number of whiteboard must be an integer\`#spygame <[option] number of spy > <[option] enable whiteboard, 0 for disable 1 for enable.>\`');
 
-    // if (playerNum < 4) return message.channel.send('Player number need to be above 4 and all players should be in the same voice channel.');
-    // if (spyNum < 1 || spyNum > playerNum / 3 || (spyNum + whiteboardNum) > playerNum / 3) return message.channel.send('Number of spy plus whiteboard must be between 1 and one third of the total players.')
+    if (playerNum < 4) return message.channel.send('Player number need to be above 4 and all players should be in the same voice channel.');
+    if (spyNum < 1 || spyNum > playerNum / 3 || (spyNum + whiteboardNum) > playerNum / 3) return message.channel.send('Number of spy plus whiteboard must be between 1 and one third of the total players.')
     const dataContruct = {
       textChannel: message.channel,
       voiceChannel: voiceChannel,

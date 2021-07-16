@@ -20,7 +20,6 @@ module.exports = class clickButtonEvent extends BaseEvent {
             case 'quickgame_button':
                 await button.reply.send(`${button.clicker.user} 搶到了!`);
                 button.message.edit(btnMessage, endButton);
-                console.log(button.clicker.user);
                 break;
             case 'quickrank_button':
                 await button.reply.send(`${button.clicker.user} 按下按鈕`);
