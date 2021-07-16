@@ -25,5 +25,5 @@ jobs:
             cd ~/code/discordBot/discord-gameBot/src
             git checkout .
             git pull
-            
+            sh deploy.sh
             
