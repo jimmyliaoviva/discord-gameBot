@@ -22,7 +22,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSHKEY }}
           script: |
-            cd ~/code/discordBot/discord-gameBot/src
+            cd ~/code/discordBot/discord-gameBot
             git checkout .
             git pull
             sh deploy.sh
