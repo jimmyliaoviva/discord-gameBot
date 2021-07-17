@@ -1,9 +1,10 @@
-const { MessageButton } = require('discord-buttons');
+const { MessageButton, MessageMenuOption, MessageMenu } = require('discord-buttons');
 const { MessageEmbed, MessageAttachment } = require('discord.js');
 const BaseCommand = require('../../utils/structures/BaseCommand');
 const questions = require('./questions.json');
 const { spygameData } = require('./spygameVar');
-const sleep = require('util').promisify(setTimeout)
+const sleep = require('util').promisify(setTimeout);
+
 module.exports = class SpygameCommand extends BaseCommand {
   constructor() {
     super('spygame', 'game', []);
@@ -11,7 +12,10 @@ module.exports = class SpygameCommand extends BaseCommand {
 
   async run(client, message, args) {
     const data = spygameData.get(message.guild.id);
-    if (data) spygameData.delete(message.guild.id);
+    if (data) {
+      client.removeListener('clickMenu', data.clickHandler)
+      spygameData.delete(message.guild.id);
+    }
     // get question
     const question = questions[Math.floor(Math.random() * questions.length)];
     const loyalans = question.loyal;
@@ -71,16 +75,20 @@ module.exports = class SpygameCommand extends BaseCommand {
     var firstIndex = Math.floor(Math.random() * dataContruct.roles.size) + 1;
     var serialNum = 0;
     var serialMembers = [];
-    var VoteButtons = [];
+    var voteOptions = [];
+    var voteMenu = new MessageMenu()
+      .setID('spygameVote');
+    // .setPlaceholder()
     voiceChannelMember.forEach((item, index) => {
       serialNum += 1;
       var newIndex = serialNum - firstIndex;
       if (newIndex >= 0) {
         serialMembers[newIndex] = { name: newIndex + 1, value: item.user };
-        VoteButtons[newIndex] = createPlayerBtn(item.user);
+        voteMenu.addOption(createPlayerOption(item.user));
+
       } else {
         serialMembers[dataContruct.roles.size - firstIndex + Math.abs(newIndex)] = { name: dataContruct.roles.size - firstIndex + Math.abs(newIndex) + 1, value: item.user };
-        VoteButtons[dataContruct.roles.size - firstIndex + Math.abs(newIndex)] = createPlayerBtn(item.user);
+        voteMenu.addOption(createPlayerOption(item.user));
       }
     });
     serialEmbeded.addFields(serialMembers);
@@ -89,7 +97,7 @@ module.exports = class SpygameCommand extends BaseCommand {
       .setColor('#000000')
       .setTitle('請按下你要投票的對象，每人只會計算一次，請謹慎選擇');
 
-    dataContruct.voteMsg.buttons = VoteButtons;
+    dataContruct.voteMsg.menus = voteMenu;
     dataContruct.voteMsg.embed = voteEmbeded;
 
     spygameData.set(message.guild.id, dataContruct);
@@ -100,22 +108,23 @@ module.exports = class SpygameCommand extends BaseCommand {
 
 }
 
-function createPlayerBtn(user) {
-  const voteBtn = new MessageButton()
-    .setStyle('green')
+function createPlayerOption(user) {
+  const voteOption = new MessageMenuOption()
     .setLabel(`${user.username}`)
-    .setID(user.id);
-  return voteBtn;
+    .setValue(user.id);
+  return voteOption;
 }
 
 async function voteClick(client, message) {
-  var voteClickHandler = async (button) => {
+  const data = spygameData.get(message.guild.id);
+  var voteClickHandler = async (menu) => {
     const data = spygameData.get(message.guild.id);
-    const clickedMember = data.roles.get(button.clicker.user.id);
-    if (!clickedMember.alive) return button.reply.send(`${clickedMember.user}死人還敢投票阿！！`);
-    if (clickedMember.vote) return button.reply.send(`${button.clicker.user} 你在此回已經投過票了！`);
+    const clickedMember = data.roles.get(menu.clicker.user.id);
+    if (!clickedMember.alive) return menu.reply.send(`${clickedMember.user}死人還敢投票阿！！`);
+    if (clickedMember.vote) return menu.reply.send(`${menu.clicker.user} 你在此回已經投過票了！`);
     // 被投票的玩家
-    const votedMember = data.roles.get(button.id);
+    const votedMember = data.roles.get(menu.values[0]);
+
     votedMember.votedNum += 1;
     clickedMember.vote = true;
     var voteCount = 0;
@@ -132,7 +141,7 @@ async function voteClick(client, message) {
       if (item.vote) voteCount += 1;
     });
 
-    await button.reply.send(`${button.clicker.user} 投給了 ${votedMember.user}`);
+    await menu.reply.send(`${menu.clicker.user} 投給了 ${votedMember.user}`);
     if (voteCount == data.roles.size) {
       if (secMax == max.num) {
         message.channel.send(`有兩個人得到一樣的票數，請開始新的一輪敘述`);
@@ -145,22 +154,23 @@ async function voteClick(client, message) {
       if (deadMember.role == 'whiteboard') data.whiteboardNumber -= 1;
       deadMember.alive = false;
       message.channel.send(`${deadMember.user} 死掉了，他的角色是 ${deadMember.role}`);
-      data.voteMsg.buttons.forEach((item)=>{
-        if (item.custom_id==deadMember.user.id) {          
-          item.setDisabled(true);
-          item.setStyle('red');
+      var newOptions = [];
+      data.voteMsg.menus.options.forEach((item) => {
+        if (item.value != deadMember.user.id) {
+          newOptions.push(item);
         }
       });
-
+      data.voteMsg.menus.options = newOptions;
+      console.log(newOptions)
       if (data.spyNumber == 0) return endGame(message, true, voteClickHandler, client);
       if (data.loyalNumber == 0) return endGame(message, false, voteClickHandler, client);
-
-
+      
       resetVote(data.roles);
       newRound(message);
     }
   }
-  client.on('clickButton', voteClickHandler);
+  data.clickHandler = voteClickHandler;
+  client.on('clickMenu', voteClickHandler);
 }
 
 function resetVote(members) {
@@ -205,5 +215,5 @@ function endGame(message, loyalWin, clickEventHandler, client) {
   })
   message.channel.send(gameEndEmbeded);
   message.channel.send(gameStatusEmbeded);
-  client.removeListener('clickButton', clickEventHandler)
+  client.removeListener('clickMenu', clickEventHandler)
 }
