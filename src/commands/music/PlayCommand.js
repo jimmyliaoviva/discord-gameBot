@@ -1,5 +1,6 @@
 const BaseCommand = require('../../utils/structures/BaseCommand');
 const ytdl = require("ytdl-core");
+const ytpl = require('ytpl');
 const { queue } = require('./musicVar.js');
 
 module.exports = class PlayCommand extends BaseCommand {
@@ -22,17 +23,25 @@ module.exports = class PlayCommand extends BaseCommand {
       );
     }
     if (!args[0]) return message.channel.send('You need to specified the youtube url after the command. \`#play <youtube url>\`');
-    var songInfo;
-    try {
-      songInfo = await ytdl.getInfo(args[0]);
-
-    } catch (err) {
-      return message.channel.send(`${err}`);
+    const url = args[0];
+    var newSongs = []
+    if (ytdl.validateURL(url)) {
+      newSongs = await parseYtUrl(url, message);
+      if (!newSongs ) return;
+    } else {
+      message.channel.send('Sorry! The current supported website is youtube. Please enter youtube url.')
     }
-    const song = {
-      title: songInfo.videoDetails.title,
-      url: songInfo.videoDetails.video_url,
-    };
+    // var songInfo;
+    // try {
+    //   songInfo = await ytdl.getInfo(args[0]);
+
+    // } catch (err) {
+    //   return message.channel.send(`${err}`);
+    // }
+    // const song = {
+    //   title: songInfo.videoDetails.title,
+    //   url: songInfo.videoDetails.video_url,
+    // };
 
 
     if (!serverQueue) {
@@ -46,22 +55,19 @@ module.exports = class PlayCommand extends BaseCommand {
       };
 
       queue.set(message.guild.id, queueContruct);
-
-      queueContruct.songs.push(song);
-
+      queueContruct.songs = queueContruct.songs.concat(newSongs);
       try {
         var connection = await voiceChannel.join();
         queueContruct.connection = connection;
         play(message.guild, queueContruct.songs[0]);
-        // listenConnection(serverQueue);
       } catch (err) {
         console.log(err);
         queue.delete(message.guild.id);
         return message.channel.send(err);
       }
     } else {
-      serverQueue.songs.push(song);
-      return message.channel.send(`${song.title} has been added to the queue!`);
+      serverQueue.songs = serverQueue.songs.concat(newSongs);
+      return message.channel.send(`${newSongs[0].title} has been added to the queue!`);
     }
   }
 }
@@ -87,4 +93,39 @@ function play(guild, song) {
   dispatcher.setVolumeLogarithmic(1);
   dispatcher.setVolume(serverQueue.volume / 100);
   serverQueue.textChannel.send(`Start playing: **${song.title}**`);
+}
+
+
+// parse different stream url
+async function parseYtUrl(url, message) {
+  var songs = [];
+  var regExp = /^.*(youtu.be\/|list=)([^#\&\?]*).*/;
+  var match = url.match(regExp);
+  var plid;
+
+  if (match) {
+    try {
+      plid = await ytpl.getPlaylistID(url);
+    } catch (err) {
+      message.channel.send(`${err}`)
+      return ;
+    }
+    const playlist = await ytpl(plid);
+
+    playlist.items.forEach(songInfo => {
+      var song = {
+        title: songInfo.title,
+        url: songInfo.url,
+      };
+      songs.push(song);
+    });
+  } else {
+    songInfo = await ytdl.getInfo(url);
+    var song = {
+      title: songInfo.videoDetails.title,
+      url: songInfo.videoDetails.video_url,
+    };
+    songs.push(song);
+  }
+  return songs
 }
