@@ -18,7 +18,10 @@
     "ffmpeg": "^0.0.4",
     "ffmpeg-static": "^4.4.0",
     "fluent-ffmpeg": "^2.1.2",
-    "ytdl-core": "^4.8.3"
+    "install": "^0.13.0",
+    "npm": "^7.20.2",
+    "ytdl-core": "^4.8.3",
+    "ytpl": "^2.2.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.9"

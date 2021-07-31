@@ -11,7 +11,8 @@ module.exports = class QueueCommand extends BaseCommand {
     // variables
     const serverQueue = queue.get(message.guild.id);
     const musicListEmbeded = new MessageEmbed()
-      .setTitle('Music playing list');
+      .setTitle('Music playing list')
+      .setDescription(`Total songs in list is ${serverQueue.songs.length}. Here's the first 25 of them.`)
 
     if (!message.member.voice.channel)
       return message.channel.send(
@@ -19,8 +20,11 @@ module.exports = class QueueCommand extends BaseCommand {
       );
     if (!serverQueue)
       return message.channel.send("There is no song in the queue!");
+    var count = 0;
     serverQueue.songs.forEach((item, index, array) => {
-      musicListEmbeded.addField(item.title, item.url);
+      count += 1;
+      if (count <= 25) musicListEmbeded.addField(item.title, item.url);
+
     });
     message.channel.send(musicListEmbeded);
   }
